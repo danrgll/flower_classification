@@ -30,3 +30,30 @@ class SampleModel(nn.Module):
         x = self.fc2(x)
 
         return x
+
+
+class ModelZeroOne(nn.Module):
+    """first model"""
+
+    def __init__(self, input_shape=(3, 64, 64), num_classes=10):
+        super(ModelZeroOne, self).__init__()
+        self.model = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=128, kernel_size=(3, 3)),
+            nn.LeakyReLU(0.02),
+            nn.MaxPool2d(kernel_size=(2, 2)),
+            nn.Dropout(0.25),
+            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=(3, 3)),
+            nn.LeakyReLU(0.025),
+            nn.MaxPool2d(kernel_size=(2, 2)),
+            nn.Dropout(0.2),
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Linear(128, 512),
+            nn.LeakyReLU(0.02),
+            nn.Dropout(0.5),
+            nn.Linear(512, 10)
+        )
+
+    def forward(self, x):
+        x = self.model.forward(x)
+        return x
