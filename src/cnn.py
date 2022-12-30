@@ -1,7 +1,10 @@
 """ File with CNN models. Add your custom CNN model here. """
 
 import torch.nn as nn
+import torch
 import torch.nn.functional as F
+from collections import OrderedDict
+from typing import List
 
 
 class SampleModel(nn.Module):
@@ -57,3 +60,61 @@ class ModelZeroOne(nn.Module):
     def forward(self, x):
         x = self.model.forward(x)
         return x
+
+
+def get_conv_model(num_filters_per_layer: List[int]) -> nn.Module:
+    """
+    Builds a deep convolutional model with varying number of convolutional
+    layers (and # filters per layer) for MNIST input using pytorch.
+
+    Args:
+        num_filters_per_layer (list): List specifying the number of filters for each convolutional layer
+
+    Returns:
+        convolutional model with desired architecture
+
+    Note:
+        for each element in num_filters_per_layer:
+            convolution (conv_kernel_size, num_filters, stride=1, padding=0) (use nn.Conv2d(..))
+            relu (use nn.ReLU())
+            max_pool(pool_kernel_size) (use nn.MaxPool2d(..))
+
+        flatten layer (already given below)
+        linear layer
+        log softmax as final activation
+    """
+    torch.manual_seed(0)  # Important: Do not remove or change this, we need it for testing purposes.
+    assert len(num_filters_per_layer) > 0, "len(num_filters_per_layer) should be greater than 0"
+    pool_kernel_size = 2
+    conv_kernel_size = 3
+
+    # OrderedDict is used to keep track of the order of the layers
+    layers = OrderedDict()
+
+    in_channels = 1
+    counter = 1
+    input_W = 28
+    input_H = 28
+    for filters in num_filters_per_layer:
+        layers["conv"+str(counter)] = nn.Conv2d(in_channels=in_channels, out_channels=filters, stride=1, padding=0,
+                                                kernel_size=conv_kernel_size)
+        layers["relu"+str(counter)] = nn.ReLU()
+        layers["max_pool"+str(counter)] = nn.MaxPool2d(kernel_size=pool_kernel_size)
+        in_channels = filters
+        # output size conv
+        output_W = (input_W - conv_kernel_size) + 1
+        output_H = (input_H - conv_kernel_size) + 1
+        output_K = filters
+        # output size max pool
+        output_W = (output_W - pool_kernel_size) // pool_kernel_size + 1
+        output_H = (output_H - pool_kernel_size) // pool_kernel_size + 1
+        input_W = output_W
+        input_H = output_H
+        counter += 1
+    # output flatten
+    conv_output_size = output_H * output_W * output_K
+    layers['flatten'] = nn.Flatten()
+    layers['linear'] = nn.Linear(conv_output_size, 10)
+    layers['log_softmax'] = nn.LogSoftmax(dim=1)
+
+    return nn.Sequential(layers)

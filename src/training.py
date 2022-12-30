@@ -2,7 +2,7 @@ from tqdm import tqdm
 import time
 
 from src.eval.evaluate import AverageMeter, accuracy
-
+from torch.utils.tensorboard import SummaryWriter
 
 def train_fn(model, optimizer, criterion, loader, device):
     """
@@ -30,7 +30,6 @@ def train_fn(model, optimizer, criterion, loader, device):
         loss = criterion(logits, labels)
         loss.backward()
         optimizer.step()
-
         acc = accuracy(logits, labels)
         n = images.size(0)
         losses.update(loss.item(), n)
