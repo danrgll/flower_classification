@@ -30,7 +30,7 @@ def accuracy(logits, labels):
     return torch.sum(preds == labels) / len(labels)
 
 
-def eval_fn(model, loader, device):
+def eval_fn(model, loader, device, criterion):
     """
     Evaluation method
     :param model: model to evaluate
@@ -39,6 +39,7 @@ def eval_fn(model, loader, device):
     :return: accuracy on the data
     """
     score = AverageMeter()
+    losses = AverageMeter()
     model.eval()
 
     t = tqdm(loader)
@@ -48,12 +49,14 @@ def eval_fn(model, loader, device):
             labels = labels.to(device)
 
             outputs = model(images)
+            loss = criterion(outputs, labels)
             acc = accuracy(outputs, labels)
+            losses.update(loss.item(), images.size(0))
             score.update(acc.item(), images.size(0))
 
             t.set_description('(=> Test) Score: {:.4f}'.format(score.avg))
 
-    return score.avg
+    return score.avg, losses.avg
 
 
 def eval_model(model, saved_model_file, test_data_dir, data_augmentations):

@@ -62,6 +62,41 @@ class ModelZeroOne(nn.Module):
         return x
 
 
+class ModelZeroTwo(nn.Module):
+    """first model"""
+
+    def __init__(self, input_shape=(3, 64, 64), num_classes=10):
+        super(ModelZeroTwo, self).__init__()
+        self.model = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=128, kernel_size=(3, 3)),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2, 2)),
+            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=(3, 3)),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2, 2)),
+            nn.Conv2d(in_channels=128, out_channels=64, kernel_size=(3, 3)),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2, 2)),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3, 3)),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2, 2)),
+            # nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Linear(256, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, 10)
+        )
+
+    def forward(self, x):
+        x = self.model.forward(x)
+        return x
+
 def get_conv_model(num_filters_per_layer: List[int]) -> nn.Module:
     """
     Builds a deep convolutional model with varying number of convolutional

@@ -29,11 +29,15 @@ def load_data(path, data_augmentations):
     return train_data
 
 
-def monitor_training(tb, train_loss, train_score, val_score, epoch):
+def monitor_training(tb, train_loss, train_score, val_loss, val_score, epoch):
     tb.add_scalar("Train Loss", train_loss, epoch)
     # tb.add_scalar("Correct", total_correct, epoch)
+    tb.add_scalar("Validation_loss", val_loss, epoch)
+    tb.add_scalars("Train_Validation_Loss", {"train loss": train_loss,
+                                            "val_loss": val_loss}, epoch)
     tb.add_scalar("Train Accuracy", train_score, epoch)
     tb.add_scalar("Val Accuracy", val_score, epoch)
+    # ToDo monitor gradients
     # tb.add_histogram("conv1.bias", model.conv1.bias, epoch)
     # tb.add_histogram("conv1.weight", model.conv1.weight, epoch)
     # tb.add_histogram("conv2.bias", model.conv2.bias, epoch)
@@ -50,6 +54,10 @@ def matplotlib_imshow(img, one_channel=False):
         plt.imshow(npimg, cmap="Greys")
     else:
         plt.imshow(np.transpose(npimg, (1, 2, 0)))
+
+
+def visualize_classification(model, images, labels):
+    pass
 
 # ToDo: Try to get projector for visualizing embeddings
 
@@ -79,7 +87,7 @@ def projector(images, labels, tb):
 
 """
 if __name__ == '__main__':
-    tb = SummaryWriter('runs/try^')
+    tb = SummaryWriter('runs/images_graph')
     model = ModelZeroOne()
     transforms.ToTensor()
     train_set = load_data(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'dataset'),

@@ -9,7 +9,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader, Subset, ConcatDataset
 from torchsummary import summary
 from torchvision.datasets import ImageFolder
-from observation import monitor_training
+from monitor import monitor_training
 from src.cnn import *
 from src.eval.evaluate import eval_fn, accuracy
 from src.training import train_fn
@@ -97,7 +97,7 @@ def main(data_dir,
             device='cuda' if torch.cuda.is_available() else 'cpu')
 
     # Train the model
-    tb = SummaryWriter("runs/trains")
+    tb = SummaryWriter("runs/modelzerotwo")
     for epoch in range(num_epochs):
         logging.info('#' * 50)
         logging.info('Epoch [{}/{}]'.format(epoch + 1, num_epochs))
@@ -107,10 +107,10 @@ def main(data_dir,
         logging.info('Train accuracy: %f', train_score)
 
         if not use_all_data_to_train:
-            test_score = eval_fn(model, val_loader, device)
+            test_score, test_loss = eval_fn(model, val_loader, device, train_criterion)
             logging.info('Validation accuracy: %f', test_score)
             score.append(test_score)
-        monitor_training(tb, train_loss, train_score, test_score, epoch)
+        monitor_training(tb, train_loss, train_score, test_loss, test_score, epoch)
 
     tb.close()
     if save_model_str:
@@ -141,11 +141,11 @@ if __name__ == '__main__':
     cmdline_parser = argparse.ArgumentParser('DL WS20/21 Competition')
 
     cmdline_parser.add_argument('-m', '--model',
-                                default='ModelZeroOne',
+                                default='ModelZeroTwo',
                                 help='Class name of model to train',
                                 type=str)
     cmdline_parser.add_argument('-e', '--epochs',
-                                default=50,
+                                default=100,
                                 help='Number of epochs',
                                 type=int)
     cmdline_parser.add_argument('-b', '--batch_size',
