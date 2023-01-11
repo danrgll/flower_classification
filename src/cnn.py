@@ -97,6 +97,34 @@ class ModelZeroTwo(nn.Module):
         x = self.model.forward(x)
         return x
 
+
+class ModelZeroThree(nn.Module):
+    """first model"""
+    def __init__(self, input_shape=(3, 64, 64), num_classes=10):
+        super(ModelZeroThree, self).__init__()
+        self.model = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=47, kernel_size=(3, 3)),
+            nn.BatchNorm2d(47),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2, 2)),
+            nn.Conv2d(in_channels=47, out_channels=50, kernel_size=(3, 3)),
+            nn.BatchNorm2d(50),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2, 2)),
+            nn.Conv2d(in_channels=50, out_channels=56, kernel_size=(3, 3)),
+            nn.BatchNorm2d(56),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=(2, 2)),
+            nn.Flatten(),
+            nn.Linear(2016, 10),
+            nn.LogSoftmax(dim=1)
+        )
+
+    def forward(self, x):
+        x = self.model.forward(x)
+        return x
+
+
 def get_conv_model(num_filters_per_layer: List[int]) -> nn.Module:
     """
     Builds a deep convolutional model with varying number of convolutional
@@ -118,7 +146,6 @@ def get_conv_model(num_filters_per_layer: List[int]) -> nn.Module:
         linear layer
         log softmax as final activation
     """
-    torch.manual_seed(0)  # Important: Do not remove or change this, we need it for testing purposes.
     assert len(num_filters_per_layer) > 0, "len(num_filters_per_layer) should be greater than 0"
     pool_kernel_size = 2
     conv_kernel_size = 3
@@ -126,10 +153,10 @@ def get_conv_model(num_filters_per_layer: List[int]) -> nn.Module:
     # OrderedDict is used to keep track of the order of the layers
     layers = OrderedDict()
 
-    in_channels = 1
+    in_channels = 3
     counter = 1
-    input_W = 28
-    input_H = 28
+    input_W = 64
+    input_H = 64
     for filters in num_filters_per_layer:
         layers["conv"+str(counter)] = nn.Conv2d(in_channels=in_channels, out_channels=filters, stride=1, padding=0,
                                                 kernel_size=conv_kernel_size)

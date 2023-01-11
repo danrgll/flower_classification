@@ -96,8 +96,10 @@ def main(data_dir,
     summary(model, input_shape,
             device='cuda' if torch.cuda.is_available() else 'cpu')
 
+    # start tensorboard
+    tb = SummaryWriter("runs/modelzerothree")
+
     # Train the model
-    tb = SummaryWriter("runs/modelzerotwo")
     for epoch in range(num_epochs):
         logging.info('#' * 50)
         logging.info('Epoch [{}/{}]'.format(epoch + 1, num_epochs))
@@ -110,6 +112,7 @@ def main(data_dir,
             test_score, test_loss = eval_fn(model, val_loader, device, train_criterion)
             logging.info('Validation accuracy: %f', test_score)
             score.append(test_score)
+        # monitoring training
         monitor_training(tb, train_loss, train_score, test_loss, test_score, epoch)
 
     tb.close()
@@ -135,17 +138,17 @@ if __name__ == '__main__':
 
     Feel free to add or remove more arguments, change default values or hardcode parameters to use.
     """
-    loss_dict = {'cross_entropy': torch.nn.CrossEntropyLoss}  # Feel free to add more
+    loss_dict = {'cross_entropy': torch.nn.CrossEntropyLoss, 'NLLL': torch.nn.NLLLoss}  # Feel free to add more
     opti_dict = {'sgd': torch.optim.SGD, 'adam': torch.optim.Adam}  # Feel free to add more
 
     cmdline_parser = argparse.ArgumentParser('DL WS20/21 Competition')
 
     cmdline_parser.add_argument('-m', '--model',
-                                default='ModelZeroTwo',
+                                default='ModelZeroThree',
                                 help='Class name of model to train',
                                 type=str)
     cmdline_parser.add_argument('-e', '--epochs',
-                                default=100,
+                                default=25,
                                 help='Number of epochs',
                                 type=int)
     cmdline_parser.add_argument('-b', '--batch_size',
@@ -157,11 +160,11 @@ if __name__ == '__main__':
                                                      '..', 'dataset'),
                                 help='Directory in which the data is stored (can be downloaded)')
     cmdline_parser.add_argument('-l', '--learning_rate',
-                                default=0.001,
+                                default=0.0013192095855803889,
                                 help='Optimizer learning rate',
                                 type=float)
     cmdline_parser.add_argument('-L', '--training_loss',
-                                default='cross_entropy',
+                                default='NLLL',
                                 help='Which loss to use during training',
                                 choices=list(loss_dict.keys()),
                                 type=str)
