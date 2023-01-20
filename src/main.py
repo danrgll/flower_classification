@@ -1,21 +1,19 @@
-import os
 import argparse
 import logging
+import os
 import time
-import numpy as np
 
-import torch
-import torchvision.transforms as transforms
-from torch.utils.data import DataLoader, Subset, ConcatDataset
+import numpy as np
+from torch.utils.data import DataLoader, ConcatDataset
+from torch.utils.tensorboard import SummaryWriter
 from torchsummary import summary
 from torchvision.datasets import ImageFolder
+
 from monitor import monitor_training
 from src.cnn import *
-from src.eval.evaluate import eval_fn, accuracy
-from src.training import train_fn
 from src.data_augmentations import *
-
-from torch.utils.tensorboard import SummaryWriter
+from src.eval.evaluate import eval_fn
+from src.training import train_fn
 
 
 def main(data_dir,
@@ -27,6 +25,7 @@ def main(data_dir,
          model_optimizer=torch.optim.Adam,
          data_augmentations=None,
          save_model_str=None,
+         load_model_str=None,
          use_all_data_to_train=False,
          exp_name=''):
     """
@@ -49,7 +48,6 @@ def main(data_dir,
 
     # Device configuration
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-
     if data_augmentations is None:
         data_augmentations = transforms.ToTensor()
     elif isinstance(data_augmentations, list):
@@ -59,6 +57,9 @@ def main(data_dir,
 
     # Load the dataset
     train_data = ImageFolder(os.path.join(data_dir, 'train'), transform=data_augmentations)
+    train_data1 = ImageFolder(os.path.join(data_dir, 'train'), transform=data_augmentations)
+    train_data2 = ImageFolder(os.path.join(data_dir, 'train'), transform=data_augmentations)
+    # not recommended to use data augmenation here..?
     val_data = ImageFolder(os.path.join(data_dir, 'val'), transform=data_augmentations)
     test_data = ImageFolder(os.path.join(data_dir, 'test'), transform=data_augmentations)
 
@@ -77,7 +78,7 @@ def main(data_dir,
                                   shuffle=True)
         logging.warning('Training with all the data (train, val and test).')
     else:
-        train_loader = DataLoader(dataset=train_data,
+        train_loader = DataLoader(dataset=ConcatDataset([train_data, train_data1, train_data2]),
                                   batch_size=batch_size,
                                   shuffle=True)
         val_loader = DataLoader(dataset=val_data,
@@ -86,9 +87,11 @@ def main(data_dir,
 
     model = torch_model(input_shape=input_shape,
                         num_classes=len(train_data.classes)).to(device)
-
+    if load_model_str is not None:
+        model.load_state_dict(torch.load(load_model_str))
     # instantiate optimizer
-    optimizer = model_optimizer(model.parameters(), lr=learning_rate)
+    # possible to add weight_decay=1e-5
+    optimizer = model_optimizer(model.parameters(), lr=learning_rate, weight_decay=0.005)
 
     # Info about the model being trained
     # You can find the number of learnable parameters in the model here
@@ -113,7 +116,7 @@ def main(data_dir,
             logging.info('Validation accuracy: %f', test_score)
             score.append(test_score)
         # monitoring training
-        monitor_training(tb, train_loss, train_score, test_loss, test_score, epoch)
+        monitor_training(tb, train_loss, train_score, test_loss, test_score, epoch, model)
 
     tb.close()
     if save_model_str:
@@ -138,7 +141,10 @@ if __name__ == '__main__':
 
     Feel free to add or remove more arguments, change default values or hardcode parameters to use.
     """
-    loss_dict = {'cross_entropy': torch.nn.CrossEntropyLoss, 'NLLL': torch.nn.NLLLoss}  # Feel free to add more
+    loss_dict = {'cross_entropy': torch.nn.CrossEntropyLoss, 'NLLL': torch.nn.NLLLoss}  #
+    # Feel
+    # free to add
+    # more
     opti_dict = {'sgd': torch.optim.SGD, 'adam': torch.optim.Adam}  # Feel free to add more
 
     cmdline_parser = argparse.ArgumentParser('DL WS20/21 Competition')
@@ -148,7 +154,7 @@ if __name__ == '__main__':
                                 help='Class name of model to train',
                                 type=str)
     cmdline_parser.add_argument('-e', '--epochs',
-                                default=25,
+                                default=10,
                                 help='Number of epochs',
                                 type=int)
     cmdline_parser.add_argument('-b', '--batch_size',
@@ -160,11 +166,11 @@ if __name__ == '__main__':
                                                      '..', 'dataset'),
                                 help='Directory in which the data is stored (can be downloaded)')
     cmdline_parser.add_argument('-l', '--learning_rate',
-                                default=0.0013192095855803889,
+                                default=0.0005445882245291535,
                                 help='Optimizer learning rate',
                                 type=float)
     cmdline_parser.add_argument('-L', '--training_loss',
-                                default='NLLL',
+                                default='cross_entropy',
                                 help='Which loss to use during training',
                                 choices=list(loss_dict.keys()),
                                 type=str)
@@ -177,6 +183,10 @@ if __name__ == '__main__':
                                 default='models',
                                 help='Path to store model',
                                 type=str)
+    cmdline_parser.add_argument('-P', '--model_load_path',
+                                default=None,
+                                help='Path to load model',
+                                type=str)
     cmdline_parser.add_argument('-v', '--verbose',
                                 default='INFO',
                                 choices=['INFO', 'DEBUG'],
@@ -186,7 +196,7 @@ if __name__ == '__main__':
                                 help='Name of this experiment',
                                 type=str)
     cmdline_parser.add_argument('-d', '--data-augmentation',
-                                default='resize_and_colour_jitter',
+                                default='crop',
                                 help='Data augmentation to apply to data before passing to the model.'
                                      + 'Must be available in data_augmentations.py')
     cmdline_parser.add_argument('-a', '--use-all-data-to-train',
@@ -212,6 +222,7 @@ if __name__ == '__main__':
         model_optimizer=opti_dict[args.optimizer],
         data_augmentations=eval(args.data_augmentation),  # Check data_augmentations.py for sample augmentations
         save_model_str=args.model_path,
+        load_model_str=args.model_load_path,
         exp_name=args.exp_name,
         use_all_data_to_train=args.use_all_data_to_train
     )
