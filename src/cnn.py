@@ -1,5 +1,5 @@
 """ File with CNN models. Add your custom CNN model here. """
-
+import numpy
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
@@ -68,29 +68,18 @@ class ModelZeroTwo(nn.Module):
     def __init__(self, input_shape=(3, 64, 64), num_classes=10):
         super(ModelZeroTwo, self).__init__()
         self.model = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=128, kernel_size=(3, 3)),
-            nn.BatchNorm2d(128),
+            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=(3, 3)),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(2, 2)),
-            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=(3, 3)),
-            nn.BatchNorm2d(128),
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=(3, 3)),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(2, 2)),
-            nn.Conv2d(in_channels=128, out_channels=64, kernel_size=(3, 3)),
-            nn.BatchNorm2d(64),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(2, 2)),
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3, 3)),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=(3, 3)),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(2, 2)),
             # nn.AdaptiveAvgPool2d((1, 1)),
             nn.Flatten(),
-            nn.Linear(256, 512),
-            nn.ReLU(),
-            nn.Linear(512, 512),
-            nn.ReLU(),
-            nn.Linear(512, 10)
+            nn.Linear(50176, 10),
         )
 
     def forward(self, x):
@@ -103,29 +92,159 @@ class ModelZeroThree(nn.Module):
     def __init__(self, input_shape=(3, 64, 64), num_classes=10):
         super(ModelZeroThree, self).__init__()
         self.model = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=47, kernel_size=(3, 3)),
-            nn.BatchNorm2d(47),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(2, 2)),
-            nn.Conv2d(in_channels=47, out_channels=50, kernel_size=(3, 3)),
-            nn.BatchNorm2d(50),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(2, 2)),
-            nn.Conv2d(in_channels=50, out_channels=56, kernel_size=(3, 3)),
-            nn.BatchNorm2d(56),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=(2, 2)),
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=(3, 3)),
+            nn.BatchNorm2d(32),
+            nn.SiLU(),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=2),
+            nn.Conv2d(in_channels=32, out_channels=32, kernel_size=(3, 3)),
+            nn.BatchNorm2d(32),
+            nn.SiLU(),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=2),
+            nn.Conv2d(in_channels=32, out_channels=42, kernel_size=(3, 3)),
+            nn.BatchNorm2d(42),
+            nn.SiLU(),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=2),
+            nn.Conv2d(in_channels=42, out_channels=54, kernel_size=(3, 3)),
+            nn.BatchNorm2d(54),
+            nn.SiLU(),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=2),
+            nn.Conv2d(in_channels=54, out_channels=54, kernel_size=(3, 3)),
+            nn.BatchNorm2d(54),
+            nn.SiLU(),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=2),
             nn.Flatten(),
-            nn.Linear(2016, 10),
-            nn.LogSoftmax(dim=1)
+            nn.Linear(2646, 10)
         )
 
     def forward(self, x):
         x = self.model.forward(x)
         return x
 
+    def predict(self, x):
+        pred = self.forward(x)
+        _, prediction = torch.max(pred.data, 1)
+        return prediction
 
-def get_conv_model(num_filters_per_layer: List[int]) -> nn.Module:
+
+class ModelZeroFour(nn.Module):
+    """first model"""
+    def __init__(self, input_shape=(3, 64, 64), num_classes=10):
+        super(ModelZeroFour, self).__init__()
+        self.model = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=(3, 3)),
+            nn.BatchNorm2d(32),
+            nn.SiLU(),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=2),
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(3, 3)),
+            nn.BatchNorm2d(64),
+            nn.SiLU(),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=2),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3, 3)),
+            nn.BatchNorm2d(64),
+            nn.SiLU(),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=2),
+            nn.AvgPool2d(kernel_size=2),
+            nn.Flatten(),
+            nn.Linear(2304, 10)
+        )
+
+    def forward(self, x):
+        x = self.model.forward(x)
+        return x
+
+    def predict(self, x):
+        pred = self.forward(x)
+        _, prediction = torch.max(pred.data, 1)
+        return prediction
+
+
+class ModelZeroFive(nn.Module):
+    """first model"""
+    def __init__(self, input_shape=(3, 64, 64), num_classes=10):
+        super(ModelZeroFive, self).__init__()
+        self.model = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=(3, 3)),
+            nn.BatchNorm2d(32),
+            nn.SiLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=2),
+            nn.Conv2d(in_channels=32, out_channels=32, kernel_size=(3, 3)),
+            nn.BatchNorm2d(32),
+            nn.SiLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=2),
+            nn.Conv2d(in_channels=32, out_channels=42, kernel_size=(3, 3)),
+            nn.BatchNorm2d(42),
+            nn.SiLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=2),
+            nn.Conv2d(in_channels=42, out_channels=64, kernel_size=(3, 3)),
+            nn.BatchNorm2d(64),
+            nn.SiLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=2),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3, 3)),
+            nn.BatchNorm2d(64),
+            nn.SiLU(),
+            nn.Dropout(0.2),
+            nn.MaxPool2d(kernel_size=(2, 2), stride=2),
+            nn.Flatten(),
+            nn.Dropout(0.2),
+            nn.Linear(2304, 10)
+        )
+
+    def forward(self, x):
+        x = self.model.forward(x)
+        return x
+
+    def predict(self, x):
+        pred = self.forward(x)
+        _, prediction = torch.max(pred.data, 1)
+        return prediction
+
+
+class ModelZeroSix(nn.Module):
+    """first model"""
+    def __init__(self, input_shape=(3, 64, 64), num_classes=10):
+        super(ModelZeroSix, self).__init__()
+        self.model = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=(3, 3)),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=32, out_channels=32, kernel_size=(3, 3)),
+            nn.BatchNorm2d(32),
+            nn.MaxPool2d(2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=32, out_channels=42, kernel_size=(3, 3)),
+            nn.BatchNorm2d(42),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=42, out_channels=42, kernel_size=(3, 3)),
+            nn.BatchNorm2d(42),
+            nn.MaxPool2d(2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=42, out_channels=64, kernel_size=(3, 3)),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3, 3)),
+            nn.BatchNorm2d(64),
+            nn.AdaptiveMaxPool2d(2),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Dropout(0.5),
+            nn.Linear(256, 10),
+        )
+
+    def forward(self, x):
+        x = self.model.forward(x)
+        return x
+
+    def predict(self, x):
+        pred = self.forward(x)
+        _, prediction = torch.max(pred.data, 1)
+        return prediction
+
+
+def get_conv_model(num_filters_per_layer: List[int], conv_kernel_size) -> nn.Module:
     """
     Builds a deep convolutional model with varying number of convolutional
     layers (and # filters per layer) for MNIST input using pytorch.
@@ -148,7 +267,6 @@ def get_conv_model(num_filters_per_layer: List[int]) -> nn.Module:
     """
     assert len(num_filters_per_layer) > 0, "len(num_filters_per_layer) should be greater than 0"
     pool_kernel_size = 2
-    conv_kernel_size = 3
 
     # OrderedDict is used to keep track of the order of the layers
     layers = OrderedDict()
@@ -160,6 +278,7 @@ def get_conv_model(num_filters_per_layer: List[int]) -> nn.Module:
     for filters in num_filters_per_layer:
         layers["conv"+str(counter)] = nn.Conv2d(in_channels=in_channels, out_channels=filters, stride=1, padding=0,
                                                 kernel_size=conv_kernel_size)
+        # layers["dropout"+str(counter)] = nn.Dropout()
         layers["relu"+str(counter)] = nn.ReLU()
         layers["max_pool"+str(counter)] = nn.MaxPool2d(kernel_size=pool_kernel_size)
         in_channels = filters
@@ -177,6 +296,9 @@ def get_conv_model(num_filters_per_layer: List[int]) -> nn.Module:
     conv_output_size = output_H * output_W * output_K
     layers['flatten'] = nn.Flatten()
     layers['linear'] = nn.Linear(conv_output_size, 10)
-    layers['log_softmax'] = nn.LogSoftmax(dim=1)
+    # Log Softmax if LLLoss is used
+    # layers['log_softmax'] = nn.LogSoftmax(dim=1)
 
     return nn.Sequential(layers)
+
+

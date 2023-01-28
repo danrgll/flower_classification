@@ -4,6 +4,7 @@ import os
 import time
 
 import numpy as np
+import torch.optim
 from torch.utils.data import DataLoader, ConcatDataset
 from torch.utils.tensorboard import SummaryWriter
 from torchsummary import summary
@@ -14,6 +15,7 @@ from src.cnn import *
 from src.data_augmentations import *
 from src.eval.evaluate import eval_fn
 from src.training import train_fn
+from torch_lr_finder import LRFinder
 
 
 def main(data_dir,
@@ -57,8 +59,8 @@ def main(data_dir,
 
     # Load the dataset
     train_data = ImageFolder(os.path.join(data_dir, 'train'), transform=data_augmentations)
-    train_data1 = ImageFolder(os.path.join(data_dir, 'train'), transform=data_augmentations)
-    train_data2 = ImageFolder(os.path.join(data_dir, 'train'), transform=data_augmentations)
+    train_data1 = ImageFolder(os.path.join(data_dir, 'train'), transform=data_set_2)
+    # train_data2 = ImageFolder(os.path.join(data_dir, 'train'), transform=data_augmentations)
     # not recommended to use data augmenation here..?
     val_data = ImageFolder(os.path.join(data_dir, 'val'), transform=data_augmentations)
     test_data = ImageFolder(os.path.join(data_dir, 'test'), transform=data_augmentations)
@@ -78,7 +80,7 @@ def main(data_dir,
                                   shuffle=True)
         logging.warning('Training with all the data (train, val and test).')
     else:
-        train_loader = DataLoader(dataset=ConcatDataset([train_data, train_data1, train_data2]),
+        train_loader = DataLoader(dataset=ConcatDataset([train_data, train_data1]),
                                   batch_size=batch_size,
                                   shuffle=True)
         val_loader = DataLoader(dataset=val_data,
@@ -91,7 +93,12 @@ def main(data_dir,
         model.load_state_dict(torch.load(load_model_str))
     # instantiate optimizer
     # possible to add weight_decay=1e-5
-    optimizer = model_optimizer(model.parameters(), lr=learning_rate, weight_decay=0.005)
+    optimizer = model_optimizer(model.parameters(), lr=learning_rate)
+    # optimizer = model_optimizer(model.parameters(), lr=learning_rate)
+
+    # learning rate scheduler
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=10, T_mult=2, eta_min=10e-7)
+
 
     # Info about the model being trained
     # You can find the number of learnable parameters in the model here
@@ -100,7 +107,9 @@ def main(data_dir,
             device='cuda' if torch.cuda.is_available() else 'cpu')
 
     # start tensorboard
-    tb = SummaryWriter("runs/modelzerothree")
+    tb = SummaryWriter("runs/modelzerosix")
+
+
 
     # Train the model
     for epoch in range(num_epochs):
@@ -117,6 +126,9 @@ def main(data_dir,
             score.append(test_score)
         # monitoring training
         monitor_training(tb, train_loss, train_score, test_loss, test_score, epoch, model)
+        # scheduler step
+        print(scheduler.get_last_lr())
+        scheduler.step()
 
     tb.close()
     if save_model_str:
@@ -145,16 +157,16 @@ if __name__ == '__main__':
     # Feel
     # free to add
     # more
-    opti_dict = {'sgd': torch.optim.SGD, 'adam': torch.optim.Adam}  # Feel free to add more
+    opti_dict = {'sgd': torch.optim.SGD, 'adam': torch.optim.Adam, 'adamw': torch.optim.AdamW}  # Feel free to add more
 
     cmdline_parser = argparse.ArgumentParser('DL WS20/21 Competition')
 
     cmdline_parser.add_argument('-m', '--model',
-                                default='ModelZeroThree',
+                                default='ModelZeroSix',
                                 help='Class name of model to train',
                                 type=str)
     cmdline_parser.add_argument('-e', '--epochs',
-                                default=10,
+                                default=100,
                                 help='Number of epochs',
                                 type=int)
     cmdline_parser.add_argument('-b', '--batch_size',
@@ -166,7 +178,8 @@ if __name__ == '__main__':
                                                      '..', 'dataset'),
                                 help='Directory in which the data is stored (can be downloaded)')
     cmdline_parser.add_argument('-l', '--learning_rate',
-                                default=0.0005445882245291535,
+                                # 0.0005445882245291535
+                                default=10e-3,
                                 help='Optimizer learning rate',
                                 type=float)
     cmdline_parser.add_argument('-L', '--training_loss',
@@ -196,7 +209,7 @@ if __name__ == '__main__':
                                 help='Name of this experiment',
                                 type=str)
     cmdline_parser.add_argument('-d', '--data-augmentation',
-                                default='crop',
+                                default='resize_to_224x224',
                                 help='Data augmentation to apply to data before passing to the model.'
                                      + 'Must be available in data_augmentations.py')
     cmdline_parser.add_argument('-a', '--use-all-data-to-train',
