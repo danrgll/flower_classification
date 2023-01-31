@@ -1,7 +1,0 @@
-budget:
-  account_for_cost: true
-  eval_cost: 6.0
-  max: 500
-  used: 444.0
-time_end: 1673468659.827204
-time_sampled: 1673468646.478394

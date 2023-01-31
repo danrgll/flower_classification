@@ -3,14 +3,16 @@ import torch
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.tensorboard import SummaryWriter
-from cnn import ModelZeroOne
+from src.cnn import ModelZeroOne
 from torch.utils.data import DataLoader, Subset, ConcatDataset
 from torchsummary import summary
 from torchvision.datasets import ImageFolder
-import data_augmentations
+import src.data_augmentations as data_augmentations
 import matplotlib.pyplot as plt
 import numpy as np
-from cnn import *
+from src.cnn import *
+from torchvision.transforms.functional import adjust_contrast, adjust_brightness, rotate, gaussian_blur
+from torchvision.transforms.functional import equalize
 
 
 def get_num_correct(preds, labels):
@@ -30,25 +32,25 @@ def load_data(path, data_augmentations):
     return train_data
 
 
-def monitor_training(tb, train_loss, train_score, val_loss, val_score, epoch, model):
+def monitor_training(tb, train_loss, train_score,epoch, model, val_loss=None, val_score=None):
     tb.add_scalar("Train Loss", train_loss, epoch)
-    # tb.add_scalar("Correct", total_correct, epoch)
-    tb.add_scalar("Validation_loss", val_loss, epoch)
-    tb.add_scalars("Train_Validation_Loss", {"train loss": train_loss,
-                                            "val_loss": val_loss}, epoch)
-    tb.add_scalar("Train Accuracy", train_score, epoch)
-    tb.add_scalar("Val Accuracy", val_score, epoch)
-    tb.add_scalars("Train_Val_accuracy", {"train_acc": train_score, "val_acc": val_score}, epoch)
-    counter = 1
-    # monitor weights and biases and gradients of them
-    for layer in model.model:
-        if hasattr(layer, 'weight'):
-            tb.add_histogram("layer_weight_histo" + str(counter), layer.weight, epoch)
-            tb.add_histogram("layer_weight_grad__histo" + str(counter), layer.weight.grad, epoch)
-        if hasattr(layer, 'bias'):
-            tb.add_histogram("layer_bias_histo" + str(counter) + "bias", layer.bias, epoch)
-            tb.add_histogram("layer_bias_grad_histo" + str(counter) + "bias", layer.bias.grad, epoch)
-        counter += 1
+    if val_loss is not None:
+        tb.add_scalar("Validation_loss", val_loss, epoch)
+        tb.add_scalars("Train_Validation_Loss", {"train loss": train_loss,
+                                                "val_loss": val_loss}, epoch)
+        tb.add_scalar("Train Accuracy", train_score, epoch)
+        tb.add_scalar("Val Accuracy", val_score, epoch)
+        tb.add_scalars("Train_Val_accuracy", {"train_acc": train_score, "val_acc": val_score}, epoch)
+        counter = 1
+        # monitor weights and biases and gradients of them
+        for layer in model.model:
+            if hasattr(layer, 'weight'):
+                tb.add_histogram("layer_weight_histo" + str(counter), layer.weight, epoch)
+                tb.add_histogram("layer_weight_grad__histo" + str(counter), layer.weight.grad, epoch)
+            if hasattr(layer, 'bias'):
+                tb.add_histogram("layer_bias_histo" + str(counter) + "bias", layer.bias, epoch)
+                tb.add_histogram("layer_bias_grad_histo" + str(counter) + "bias", layer.bias.grad, epoch)
+            counter += 1
 
 
 def matplotlib_imshow(img, label, counter, prediction=None, one_channel=False, dir_name="predictions"):
@@ -70,38 +72,47 @@ def matplotlib_imshow(img, label, counter, prediction=None, one_channel=False, d
 
 
 def visualize_classification(model, model_path, data_dir=os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                            '..', 'dataset'), num_predictions=100, folder_name="predictions"):
+                            '..', 'dataset'), num_predictions=200, folder_name="predictions"):
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
     model.load_state_dict(torch.load(model_path))
     model.eval()
-    val_data = ImageFolder(os.path.join(data_dir, 'val'), transform=data_augmentations.resize_to_224x224)
-    val_loader = torch.utils.data.DataLoader(val_data, batch_size=num_predictions, shuffle=True)
+    val_data = ImageFolder(os.path.join(data_dir, 'val'), transform=data_augmentations.crop)
+    val_loader = torch.utils.data.DataLoader(val_data, batch_size=num_predictions, shuffle=False)
     images, labels = next(iter(val_loader))
     counter = 0
     for image, label in zip(images, labels):
         # add batchsize dimension
         batch_image = image.unsqueeze(0)
+        print(batch_image)
         with torch.no_grad():
             predicted_class = model.predict(batch_image)
-        matplotlib_imshow(image, label, counter, predicted_class)
+        if int(label.item()) != int(predicted_class.item()):
+            matplotlib_imshow(image, label, counter, predicted_class)
         counter += 1
 
 
-if __name__ == '__main__':
-    # tb = SummaryWriter('runs/images_graph')
-    # model = ModelZeroOne()
+def tb_images():
+    tb = SummaryWriter('runs/imagesss')
+    model = ModelZeroSeven()
     # train_set = load_data(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'dataset'),
-    #                       [data_augmentations.test])
-    # train_loader = torch.utils.data.DataLoader(train_set, batch_size=5, shuffle=True)
-    # images, labels = next(iter(train_loader))
+    #                      [data_augmentations.data_set_4])
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            '..', 'dataset')
+    train_data = ImageFolder(os.path.join(data_dir, 'train'), transform=data_augmentations.crop)
+    train_loader = torch.utils.data.DataLoader(train_data, batch_size=100, shuffle=True)
+    images, labels = next(iter(train_loader))
     # create grid of images
-    # grid = torchvision.utils.make_grid(images)
+    grid = torchvision.utils.make_grid(images)
     # show images
     # matplotlib_imshow(grid, one_channel=True)
-    # tb.add_image(str(labels), grid)
+    tb.add_image(str(labels), grid)
     # inspect graph
-    # tb.add_graph(model, images)
-    model = ModelZeroThree()
-    visualize_classification(model, "models/default_model_1674232005")
+    tb.add_graph(model, images)
+
+
+if __name__ == '__main__':
+    # tb_images()
+    model = ModelZeroSeven()
+    visualize_classification(model, "../models/fast_model")
 

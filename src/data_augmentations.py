@@ -1,6 +1,7 @@
 from torchvision import transforms
 from torchvision.transforms import RandomHorizontalFlip, RandomRotation, RandomResizedCrop, ToTensor, Normalize, \
     TenCrop, FiveCrop, PILToTensor, Lambda
+from torchvision.transforms.functional import equalize
 import torch
 
 
@@ -19,15 +20,39 @@ resize_to_128x128 = transforms.Compose([
     transforms.ToTensor()
 ])
 
+test = transforms.Compose([
+    # transforms.Resize((224, 224)),
+    # transforms.GaussianBlur((3, 3)),
+    # transforms.RandomHorizontalFlip(1),
+    # transforms.Grayscale(3),
+    # transforms.Normalize()
+    # transforms.RandomInvert(),
+    transforms.RandomAffine(0.4),
+    transforms.Resize((224, 224)),
+    transforms.ToTensor()
+])
+
 resize_to_224x224 = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor()
 ])
 
-data_set_2 = transforms.Compose([
+trivial_augment = transforms.Compose([
+    transforms.TrivialAugmentWide(num_magnitude_bins=42),
     transforms.Resize((224, 224)),
-    transforms.TrivialAugmentWide(),
     transforms.ToTensor()
+])
+
+data_set_3 = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.RandAugment(num_magnitude_bins=42),
+    transforms.ToTensor()
+])
+
+data_set_4 = transforms.Compose([
+transforms.Resize((224, 224)),
+transforms.ToTensor(),
+    transforms.ColorJitter(brightness=0.9, contrast=0.1),
 ])
 
 nothing = transforms.Compose([
@@ -40,7 +65,7 @@ resize_and_colour_jitter = transforms.Compose([
     transforms.ToTensor()
 ])
 
-crop = transforms.Compose([transforms.RandomCrop((300, 300)),
+crop = transforms.Compose([transforms.RandomCrop((224, 224)),
                            ToTensor()])
 crop_reducing = transforms.Compose([transforms.Lambda(lambda img: img.resize((img.size[0]//2, img.size[1]//2))),
                             transforms.CenterCrop((256, 256)),

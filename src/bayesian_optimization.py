@@ -9,8 +9,9 @@ import logging
 import shutil
 from torch.utils.data import DataLoader
 import torch.nn as nn
-from data_augmentations import resize_to_64x64
+from data_augmentations import resize_to_64x64, crop
 from hyper_parameter_search import training, evaluate_accuracy, get_conv_model
+from cnn import *
 
 
 def get_pipeline_space() -> dict:
@@ -21,7 +22,7 @@ def get_pipeline_space() -> dict:
           num_filters_2   from    4 to   32 (int, log)
           num_filters_3   from    4 to   32 (int, log)
           lr              from 1e-6 to 1e-1 (float, log)
-          optimizer            Adam or  SGD (categorical, order is important for tests)
+          optimizer            Adam or  SGD (categorical)
           epochs          from 1 to 9 (fidelity parameter)
 
         Returns:
@@ -30,18 +31,19 @@ def get_pipeline_space() -> dict:
         Note:
             Please name the hyperparameters and order them as given above (needed for testing)
         """
-
     pipeline_space = dict(
-        num_filters_1=neps.IntegerParameter(lower=16, upper=64, log=True),
-        num_filters_2=neps.IntegerParameter(lower=16, upper=64, log=True),
-        num_filters_3=neps.IntegerParameter(lower=16, upper=64, log=True),
-        lr=neps.FloatParameter(lower=1e-6, upper=1e-1, log=True),
-        optimizer=neps.CategoricalParameter(choices=["Adam", "SGD"]),
+        # num_filters_1=neps.IntegerParameter(lower=32, upper=32, log=True),
+        # num_filters_2=neps.IntegerParameter(lower=64, upper=64, log=True),
+        # num_filters_3=neps.IntegerParameter(lower=64, upper=64, log=True),
+        kernel_size=neps.CategoricalParameter(choices=[3]),
+        lr=neps.FloatParameter(lower=1e-7, upper=1e-1, log=True),
+        optimizer=neps.CategoricalParameter(choices=["Adam"]),
     )
     return pipeline_space
 
 
-def run_pipeline(lr, num_filters_1, num_filters_2, num_filters_3, optimizer, batch_size=32, epochs=7):
+def run_pipeline(lr, optimizer, kernel_size, num_filters_1=32, num_filters_2=64, num_filters_3=64, batch_size=32,
+                 epochs=30):
     """ Train and evaluate a model given some configuration
 
     Args:
@@ -62,8 +64,8 @@ def run_pipeline(lr, num_filters_1, num_filters_2, num_filters_3, optimizer, bat
     # load data
     data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             '..', 'dataset')
-    train_data = ImageFolder(os.path.join(data_dir, 'train'), transform=resize_to_64x64)
-    val_data = ImageFolder(os.path.join(data_dir, 'val'), transform=resize_to_64x64)
+    train_data = ImageFolder(os.path.join(data_dir, 'train'), transform=crop)
+    val_data = ImageFolder(os.path.join(data_dir, 'val'), transform=crop)
 
     train_loader = DataLoader(dataset=train_data,
                               batch_size=batch_size,
@@ -77,7 +79,8 @@ def run_pipeline(lr, num_filters_1, num_filters_2, num_filters_3, optimizer, bat
     # create model
     num_filters_per_layer = [num_filters_1, num_filters_2, num_filters_3]
 
-    model = get_conv_model(num_filters_per_layer)
+    # model = get_conv_model(num_filters_per_layer, kernel_size)
+    model = ModelZeroThree()
     # choose optimizer
     if optimizer == "Adam":
         optimizer = torch.optim.Adam(model.parameters(), lr=lr)
@@ -115,7 +118,7 @@ def bayesian():
         run_pipeline=run_pipeline,
         pipeline_space=pipeline_space,
         root_directory="results/bayesian_optimization",
-        max_evaluations_total=50,
+        max_evaluations_total=20,
         searcher="bayesian_optimization"
     )
     previous_results, pending_configs = neps.status(

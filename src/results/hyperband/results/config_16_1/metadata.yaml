@@ -1,8 +1,0 @@
-budget:
-  account_for_cost: true
-  eval_cost: 14.0
-  max: 500
-  used: 248.0
-previous_config_id: '16_0'
-time_end: 1673468207.6663182
-time_sampled: 1673468175.218796

@@ -1,11 +1,10 @@
 import os
-import torch
 import logging
 import argparse
 
 from src.eval.evaluate import eval_model
-from src.cnn import *
 from src.data_augmentations import *
+from src.cnn import *
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
@@ -13,24 +12,24 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('DL WS20/21 Competition')
 
     parser.add_argument('-m', '--model',
-                        default='SampleModel',
+                        default='ModelZeroSeven',
                         help='Name of the Model class present in cnn.py (Eg: SampleModel)',
                         type=str)
 
     parser.add_argument('-p', '--saved-model-file',
-                        default='sample_model',
+                        default='../models/fast_model',
                         help='Name of file inside models directory which contains the saved weights of the trained '
                              'model',
                         type=str)
 
     parser.add_argument('-D', '--test-data-dir',
-                        default=os.path.join(os.getcwd(), 'dataset', 'test'),
+                        default=os.path.join(os.getcwd(), 'dataset', 'val'),
                         help='Path to folder with the test data to evaluate the model on.'
                         + 'The organizers will populate the test folder with the unseen dataset to evaluate your model.'
                         )
 
     parser.add_argument('-d', '--data-augmentations',
-                        default='resize_to_64x64',
+                        default='resize_to_224x224',
                         help='Data augmentation to apply to data before passing it to the model. '
                         + 'Must be available in data_augmentations.py')
 

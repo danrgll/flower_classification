@@ -189,7 +189,7 @@ class ModelZeroFive(nn.Module):
             nn.Dropout(0.2),
             nn.MaxPool2d(kernel_size=(2, 2), stride=2),
             nn.Flatten(),
-            nn.Dropout(0.2),
+            nn.Dropout(0.5),
             nn.Linear(2304, 10)
         )
 
@@ -222,16 +222,16 @@ class ModelZeroSix(nn.Module):
             nn.BatchNorm2d(42),
             nn.MaxPool2d(2),
             nn.ReLU(),
-            nn.Conv2d(in_channels=42, out_channels=64, kernel_size=(3, 3)),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(in_channels=42, out_channels=62, kernel_size=(3, 3)),
+            nn.BatchNorm2d(62),
             nn.ReLU(),
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=(3, 3)),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(in_channels=62, out_channels=62, kernel_size=(3, 3)),
+            nn.BatchNorm2d(62),
             nn.AdaptiveMaxPool2d(2),
             nn.ReLU(),
             nn.Flatten(),
             nn.Dropout(0.5),
-            nn.Linear(256, 10),
+            nn.Linear(248, 10),
         )
 
     def forward(self, x):
@@ -240,7 +240,51 @@ class ModelZeroSix(nn.Module):
 
     def predict(self, x):
         pred = self.forward(x)
-        _, prediction = torch.max(pred.data, 1)
+        _, prediction = torch.argmax(pred.data, -1)
+        print(prediction)
+        return prediction
+
+
+class ModelZeroSeven(nn.Module):
+    """first model"""
+    def __init__(self, input_shape=(3, 64, 64), num_classes=10):
+        super(ModelZeroSeven, self).__init__()
+        self.model = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=(3, 3)),
+            nn.BatchNorm2d(32),
+            nn.MaxPool2d(2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=32, out_channels=32, kernel_size=(3, 3)),
+            nn.BatchNorm2d(32),
+            nn.MaxPool2d(2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=32, out_channels=42, kernel_size=(3, 3)),
+            nn.BatchNorm2d(42),
+            nn.MaxPool2d(2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=42, out_channels=42, kernel_size=(3, 3)),
+            nn.BatchNorm2d(42),
+            nn.MaxPool2d(2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=42, out_channels=60, kernel_size=(3, 3)),
+            nn.BatchNorm2d(60),
+            nn.MaxPool2d(2),
+            nn.ReLU(),
+            nn.Conv2d(in_channels=60, out_channels=60, kernel_size=(3, 3)),
+            nn.BatchNorm2d(60),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Dropout(0.42),
+            nn.Linear(540, 10),
+        )
+
+    def forward(self, x):
+        x = self.model.forward(x)
+        return x
+
+    def predict(self, x):
+        pred = self.forward(x)
+        prediction = torch.argmax(pred.data, 1)
         return prediction
 
 
