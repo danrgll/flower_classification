@@ -26,6 +26,10 @@ def train_fn(model, optimizer, criterion, loader, device):
     t = tqdm(loader)
     for images, labels in t:
         images = images.to(device)
+        print("ACHTTTTUUNGGG")
+        print(images.shape)
+        print(labels)
+        print(labels.dtype)
         labels = labels.to(device)
         rand = random.random()
         if rand < 0.05:

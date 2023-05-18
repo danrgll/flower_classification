@@ -79,12 +79,16 @@ def main(data_dir,
 
     # image size
     input_shape = (channels, img_height, img_width)
+    print("image size")
+    print(input_shape)
 
     # instantiate training criterion
     train_criterion = train_criterion().to(device)
     score = []
     model = torch_model(input_shape=input_shape,
                         num_classes=len(train_data.classes)).to(device)
+    print("model")
+    print(model)
     if load_model_str is not None:
         model.load_state_dict(torch.load(load_model_str))
 
